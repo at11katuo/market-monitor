@@ -16,8 +16,8 @@ import pandas as pd
 import requests
 import yfinance as yf
 
-LINE_NOTIFY_TOKEN = os.environ.get("LINE_NOTIFY_TOKEN", "")
-LINE_NOTIFY_URL = "https://notify-api.line.me/api/notify"
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
+LINE_BROADCAST_URL = "https://api.line.me/v2/bot/message/broadcast"
 
 
 def fetch_close(ticker: str, period: str) -> pd.Series:
@@ -42,14 +42,18 @@ def calculate_rsi(prices: pd.Series, period: int = 14) -> float:
 
 
 def send_line_notify(message: str) -> None:
-    if not LINE_NOTIFY_TOKEN:
-        print("エラー: LINE_NOTIFY_TOKEN が未設定です", file=sys.stderr)
+    if not LINE_CHANNEL_ACCESS_TOKEN:
+        print("エラー: LINE_CHANNEL_ACCESS_TOKEN が未設定です", file=sys.stderr)
         sys.exit(1)
-    headers = {"Authorization": f"Bearer {LINE_NOTIFY_TOKEN}"}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
+    }
+    body = {"messages": [{"type": "text", "text": message}]}
     resp = requests.post(
-        LINE_NOTIFY_URL,
+        LINE_BROADCAST_URL,
         headers=headers,
-        data={"message": message},
+        json=body,
         timeout=10,
     )
     resp.raise_for_status()
@@ -57,9 +61,9 @@ def send_line_notify(message: str) -> None:
 
 def main() -> None:
     # ===== テストモード: 判定条件をすべてスキップして必ず通知する =====
-    message = "\n【テスト通知】監視BotのLINE連携テストです。システムは正常に稼働しています。"
+    message = "【テスト通知】Messaging APIへの移行テストです。"
     send_line_notify(message)
-    print("LINE Notify 送信完了（テストモード）")
+    print("LINE Messaging API 送信完了（テストモード）")
 
 
 if __name__ == "__main__":
