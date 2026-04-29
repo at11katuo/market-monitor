@@ -56,6 +56,8 @@ def send_line_notify(message: str) -> None:
         json=body,
         timeout=10,
     )
+    if not resp.ok:
+        print(f"送信失敗 HTTP {resp.status_code}: {resp.text}", file=sys.stderr)
     resp.raise_for_status()
 
 
