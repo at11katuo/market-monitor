@@ -1,0 +1,28 @@
+name: VT Market Monitor
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 毎日 09:00 JST (= 00:00 UTC)
+  workflow_dispatch:       # GitHub UI からの手動実行も可能
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run market monitor
+        env:
+          LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
+        run: python market_monitor.py
