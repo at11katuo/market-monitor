@@ -62,7 +62,6 @@ def send_line_notify(message: str) -> None:
 
 
 def main() -> None:
-    # ===== 数値レポートモード: 判定条件をすべてスキップして指標値を送信する =====
     vt_close = fetch_close("VT", "2y")
     vix_close = fetch_close("^VIX", "10d")
 
@@ -77,17 +76,27 @@ def main() -> None:
     drawdown = (current_price - high_21d) / high_21d
     sma200 = float(vt_close.rolling(200).mean().iloc[-1])
 
+    cond_rsi = rsi <= 30.0
+    cond_drawdown = drawdown <= -0.10
+    cond_vix = current_vix >= 30.0
+    cond_sma = current_price < sma200
+
+    # 沈黙のルール: 4条件すべて成立しなければ何もせず終了
+    if not (cond_rsi and cond_drawdown and cond_vix and cond_sma):
+        sys.exit(0)
+
     message = (
-        "【VT 指標レポート】\n"
+        "【VT 総悲観・高勝率シグナル 検知】\n"
         f"現在価格  : ${current_price:.2f}\n"
-        f"RSI(14)   : {rsi:.1f}\n"
-        f"21日高値比: {drawdown * 100:.1f}%\n"
-        f"VIX       : {current_vix:.1f}\n"
-        f"200SMA    : ${sma200:.2f}"
+        f"RSI(14)   : {rsi:.1f}  (<=30 ✅)\n"
+        f"21日高値比: {drawdown * 100:.1f}%  (<=-10% ✅)\n"
+        f"VIX       : {current_vix:.1f}  (>=30 ✅)\n"
+        f"200SMA    : ${sma200:.2f}  (現在価格が下回り ✅)\n"
+        "-> 全条件クリア。買い検討を推奨します。"
     )
 
     send_line_notify(message)
-    print("LINE Messaging API 送信完了（数値レポートモード）")
+    print("LINE Messaging API 送信完了")
 
 
 if __name__ == "__main__":
