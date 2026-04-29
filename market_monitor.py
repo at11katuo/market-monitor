@@ -62,10 +62,32 @@ def send_line_notify(message: str) -> None:
 
 
 def main() -> None:
-    # ===== テストモード: 判定条件をすべてスキップして必ず通知する =====
-    message = "【テスト通知】Messaging APIへの移行テストです。"
+    # ===== 数値レポートモード: 判定条件をすべてスキップして指標値を送信する =====
+    vt_close = fetch_close("VT", "2y")
+    vix_close = fetch_close("^VIX", "10d")
+
+    if len(vt_close) < 200:
+        print("データ不足: 200SMA を計算できません", file=sys.stderr)
+        sys.exit(1)
+
+    current_price = float(vt_close.iloc[-1])
+    current_vix = float(vix_close.iloc[-1])
+    rsi = calculate_rsi(vt_close, period=14)
+    high_21d = float(vt_close.iloc[-21:].max())
+    drawdown = (current_price - high_21d) / high_21d
+    sma200 = float(vt_close.rolling(200).mean().iloc[-1])
+
+    message = (
+        "【VT 指標レポート】\n"
+        f"現在価格  : ${current_price:.2f}\n"
+        f"RSI(14)   : {rsi:.1f}\n"
+        f"21日高値比: {drawdown * 100:.1f}%\n"
+        f"VIX       : {current_vix:.1f}\n"
+        f"200SMA    : ${sma200:.2f}"
+    )
+
     send_line_notify(message)
-    print("LINE Messaging API 送信完了（テストモード）")
+    print("LINE Messaging API 送信完了（数値レポートモード）")
 
 
 if __name__ == "__main__":
